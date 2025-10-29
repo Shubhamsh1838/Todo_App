@@ -8,15 +8,14 @@ require('dotenv').config();
 
 const app = express();
 
-// Security middleware
+app.set('trust proxy', 1);
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "same-site" }
 }));
 
-// Compression middleware
 app.use(compression());
 
-// Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: process.env.NODE_ENV === 'production' ? 100 : 1000, // limit each IP
@@ -27,23 +26,19 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// CORS configuration
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true
 }));
 
-// Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 
-// Root endpoint
 app.get('/', (req, res) => {
   res.json({ 
     success: true,
@@ -53,7 +48,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Unhandled error:', error);
   res.status(500).json({
@@ -62,9 +56,7 @@ app.use((error, req, res, next) => {
       ? 'Internal server error' 
       : error.message
   });
-});
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
     success: false,
@@ -72,7 +64,6 @@ app.use((req, res) => {
   });
 });
 
-// Database connection
 const connectDB = async () => {
     try {
       await mongoose.connect(process.env.MONGODB_URI);
@@ -83,7 +74,6 @@ const connectDB = async () => {
     }
 };
 
-// Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down gracefully');
   await mongoose.connection.close();
@@ -96,7 +86,6 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-// Start server
 const startServer = async () => {
   const dbConnected = await connectDB();
   
@@ -120,5 +109,6 @@ const startServer = async () => {
     process.exit(1);
   });
 };
+
 
 startServer();
