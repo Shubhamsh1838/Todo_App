@@ -10,14 +10,17 @@ const app = express();
 
 app.set('trust proxy', 1);
 
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "same-site" }
 }));
 
+
 app.use(compression());
 
+
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000, 
   max: process.env.NODE_ENV === 'production' ? 100 : 1000, // limit each IP
   message: {
     success: false,
@@ -26,18 +29,22 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true
 }));
 
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
 
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
+
 
 app.get('/', (req, res) => {
   res.json({ 
@@ -56,6 +63,8 @@ app.use((error, req, res, next) => {
       ? 'Internal server error' 
       : error.message
   });
+});
+
 
 app.use((req, res) => {
   res.status(404).json({ 
@@ -86,6 +95,7 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
+
 const startServer = async () => {
   const dbConnected = await connectDB();
   
@@ -103,12 +113,10 @@ const startServer = async () => {
     console.log(`http://localhost:${PORT}`);
   });
 
-  // Handle server errors
   server.on('error', (error) => {
     console.error('Server error:', error);
     process.exit(1);
   });
 };
-
 
 startServer();
