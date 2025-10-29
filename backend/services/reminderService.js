@@ -31,6 +31,8 @@ class ReminderService {
     const now = new Date();
     const reminderWindow = new Date(now.getTime() + 30 * 60 * 1000);
 
+    console.log(`[${now.toISOString()}] Checking tasks due before: ${reminderWindow.toISOString()}`);
+
     try {
       const tasks = await Task.find({
         dueDate: {
@@ -43,42 +45,29 @@ class ReminderService {
 
       if (tasks.length > 0) {
         console.log(`Found ${tasks.length} tasks due soon`);
+      } else {
+        console.log('No tasks due for reminders at this time');
       }
 
-      const results = await Promise.allSettled(
-        tasks.map(task => this.processTaskReminder(task))
-      );
-
-      const successful = results.filter(r => r.status === 'fulfilled' && r.value).length;
-      const failed = results.filter(r => r.status === 'rejected').length;
-      
-      if (successful > 0 || failed > 0) {
-        console.log(`Reminder processing: ${successful} successful, ${failed} failed`);
+      for (const task of tasks) {
+        console.log(`Processing reminder for task: "${task.title}" for user: ${task.user.email}, due: ${task.dueDate}`);
+        
+        const emailSent = await emailService.sendReminderEmail(task.user, task);
+        
+        if (emailSent) {
+          task.reminderSent = true;
+          await task.save();
+          console.log(`SUCCESS: Reminder sent for task: "${task.title}" to ${task.user.email}`);
+        } else {
+          console.log(`FAILED: Could not send email for task: "${task.title}"`);
+        }
       }
 
+      if (tasks.length > 0) {
+        console.log(`Finished processing ${tasks.length} tasks`);
+      }
     } catch (error) {
       console.error('Error finding due tasks:', error);
-    }
-  }
-
-  async processTaskReminder(task) {
-    try {
-      console.log(`Processing reminder for task: "${task.title}"`);
-      
-      const emailSent = await emailService.sendReminderEmail(task.user, task);
-      
-      if (emailSent) {
-        task.reminderSent = true;
-        await task.save();
-        console.log(`Reminder sent and marked for task: "${task.title}"`);
-        return true;
-      } else {
-        console.log(`Failed to send email for task: "${task.title}"`);
-        return false;
-      }
-    } catch (error) {
-      console.error(`Failed to process reminder for task "${task.title}":`, error);
-      return false;
     }
   }
 
