@@ -14,13 +14,22 @@ class EmailService {
           user: process.env.SMTP_USER,
           pass: process.env.SENDGRID_API_KEY,
         },
+        // ✅ ADD THESE TIMEOUT SETTINGS
+        connectionTimeout: 30000, // 30 seconds
+        socketTimeout: 30000,     // 30 seconds
+        greetingTimeout: 30000,   // 30 seconds
+        // ✅ ADD TLS SETTINGS FOR RENDER
+        tls: {
+          rejectUnauthorized: false
+        }
       });
-      console.log('SendGrid email service configured');
+      console.log('SendGrid email service configured with timeout settings');
     } else {
       console.log('Using console email logging for development');
     }
   }
 
+  // Keep the rest of your code exactly the same...
   async sendEmail(to, subject, text, html = null) {
     try {
       if (!to || !subject || !text) {
@@ -35,12 +44,9 @@ class EmailService {
           subject,
           text,
           html: html || text,
-          headers: {
-            'Priority': 'High',
-            'X-Priority': '1',
-          }
         };
 
+        console.log(`Attempting to send email to: ${to}`);
         const result = await this.transporter.sendMail(mailOptions);
         console.log(`Email sent to ${to}, Message ID: ${result.messageId}`);
         return true;
@@ -54,11 +60,12 @@ class EmailService {
         return true;
       }
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('Error sending email:', error.message);
       return false;
     }
   }
 
+  // Keep your sendReminderEmail method exactly as it is...
   async sendReminderEmail(user, task) {
     const dueDate = new Date(task.dueDate).toLocaleString();
     
