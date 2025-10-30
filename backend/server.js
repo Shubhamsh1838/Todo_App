@@ -11,12 +11,14 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
+
 
 app.get('/', (req, res) => {
   res.json({ message: 'Todo App API' });
@@ -29,15 +31,17 @@ app.use((req, res) => {
 
 const connectDB = async () => {
   try {
-     await mongoose.connect(process.env.MONGODB_URI);
-    console.log('✅ Connected to MongoDB');
+     await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    console.log('Connected to MongoDB');
     return true;
   } catch (error) {
     console.log('Primary connection failed, trying local fallback...');
   }
 };
 
-// Start server
 const startServer = async () => {
   const dbConnected = await connectDB();
   
@@ -49,7 +53,7 @@ const startServer = async () => {
     console.log('Starting server without database (limited functionality)');
   }
   
-  const PORT = process.env.PORT || 5000;
+  const PORT = process.env.PORT;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`http://localhost:${PORT}`);
@@ -57,3 +61,5 @@ const startServer = async () => {
 };
 
 startServer();
+
+
