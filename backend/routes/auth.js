@@ -6,7 +6,6 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// Register
 router.post('/register', [
   body('name').notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Please include a valid email'),
@@ -48,7 +47,7 @@ router.post('/register', [
   }
 });
 
-// Login
+
 router.post('/login', [
   body('email').isEmail().withMessage('Please include a valid email'),
   body('password').exists().withMessage('Password is required')
@@ -91,7 +90,6 @@ router.post('/login', [
   }
 });
 
-// Get current user
 router.get('/me', auth, async (req, res) => {
   res.json({
     user: {
